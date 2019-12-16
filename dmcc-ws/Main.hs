@@ -159,6 +159,7 @@ avayaApplication Config{..} as refs pending = do
           ext' = Extension $ T.pack $ show ext
       conn <- acceptRequest pending
       syslog Debug $ "New websocket opened for " ++ label
+      forkPingThread conn 30
       -- Create a new agent reference, possibly establishing control
       -- over the agent
       r <- atomically $ takeTMVar refs
