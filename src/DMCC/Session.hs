@@ -191,7 +191,7 @@ startSession (host, port) ct user pass whUrl lopts sopts = withOpenSSL $ do
               sslCtx <- SSL.context
               SSL.contextSetDefaultCiphers sslCtx
               SSL.contextSetVerificationMode sslCtx $
-                SSL.VerifyPeer True True Nothing
+                SSL.VerifyNone
               maybe (return ()) (SSL.contextSetCADirectory sslCtx) caDir
               (is, os, ssl) <- SSLStreams.connect sslCtx host port
               let cl = do
