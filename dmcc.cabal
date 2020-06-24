@@ -1,0 +1,98 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 25e29a26ca3f902cce912227d41d5539107f9bd579b2c89251dad6691aff7619
+
+name:           dmcc
+version:        1.1.0.2
+synopsis:       AVAYA DMCC API bindings and WebSockets server for AVAYA
+description:    Partial implementation of CSTA Phase III XML Protocol (ECMA-323) with AVAYA (DMCC 6.3) extensions.
+category:       Network
+homepage:       https://github.com/f-me/dmcc#readme
+bug-reports:    https://github.com/f-me/dmcc/issues
+author:         Max Taldykin, Timofey Cherganov, Dmitry Dzhus, Viacheslav Lotsmanov
+maintainer:     dima@dzhus.org
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    CHANGELOG.md
+    README.md
+    dmcc-ws/example.cfg
+
+source-repository head
+  type: git
+  location: https://github.com/f-me/dmcc
+
+library
+  exposed-modules:
+      DMCC
+      DMCC.Agent
+      DMCC.Prelude
+      DMCC.Session
+      DMCC.Types
+      DMCC.Util
+      DMCC.WebHook
+      DMCC.XML.Raw
+      DMCC.XML.Request
+      DMCC.XML.Response
+  other-modules:
+      Paths_dmcc
+  hs-source-dirs:
+      src
+  default-extensions: OverloadedStrings RecordWildCards NamedFieldPuns NoImplicitPrelude
+  ghc-options: -Wall -Wcompat -Wno-missing-home-modules
+  build-depends:
+      HsOpenSSL
+    , aeson
+    , base
+    , binary
+    , bytestring
+    , case-insensitive
+    , classy-prelude
+    , containers
+    , http-client
+    , io-streams
+    , lens
+    , monad-control
+    , monad-logger
+    , network
+    , openssl-streams
+    , safe-exceptions
+    , stm
+    , text
+    , time
+    , transformers-base
+    , unliftio
+    , xml-conduit
+    , xml-hamlet
+  default-language: Haskell2010
+
+executable dmcc-ws
+  main-is: Main.hs
+  other-modules:
+      Paths_dmcc
+  hs-source-dirs:
+      dmcc-ws
+  default-extensions: OverloadedStrings RecordWildCards NamedFieldPuns NoImplicitPrelude
+  ghc-options: -Wall -Wcompat -Wno-missing-home-modules -threaded
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , classy-prelude
+    , configurator
+    , containers
+    , dmcc
+    , monad-control
+    , monad-logger
+    , random
+    , stm
+    , text
+    , unix
+    , unliftio
+    , websockets
+  default-language: Haskell2010

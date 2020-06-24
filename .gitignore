@@ -1,5 +1,4 @@
 dist
-dmcc.cabal
 .cabal-sandbox
 cabal.sandbox.config
 .stack-work
