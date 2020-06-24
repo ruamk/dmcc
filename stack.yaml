@@ -1,5 +1,2 @@
-packages:
-- '.'
-extra-deps: 
-- semigroupoids-5.0.0.4@rev:0
-resolver: lts-5.14
+resolver: lts-15.15
+pvp-bounds: upper

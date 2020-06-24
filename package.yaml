@@ -1,36 +1,43 @@
----
 name: dmcc
-version: 0.6.0
-synopsis: AVAYA DMCC XML API implementation and WebSockets server
+version: 1.1.0.2
+synopsis: AVAYA DMCC API bindings and WebSockets server for AVAYA
 description:
   >-
     Partial implementation of CSTA Phase III XML Protocol (ECMA-323)
     with AVAYA (DMCC 6.3) extensions.
 github: f-me/dmcc
 license: BSD3
-author: Max Taldykin, Timofey Cherganov, Dmitry Dzhus
-maintainer: dmitry@formalmethods.ru
+author: Max Taldykin, Timofey Cherganov, Dmitry Dzhus, Viacheslav Lotsmanov
+maintainer: dima@dzhus.org
 category: Network
 
 extra-source-files:
+  - CHANGELOG.md
   - README.md
   - dmcc-ws/example.cfg
 
 default-extensions:
-  - OverloadedStrings,
-  - RecordWildCards,
+  - OverloadedStrings
+  - RecordWildCards
   - NamedFieldPuns
+  - NoImplicitPrelude
 
-ghc-options: -Wall -fno-warn-unused-do-bind -threaded
+ghc-options:
+  - -Wall
+  - -Wcompat
+  - -Wno-missing-home-modules # fix for haddock (probably caused by *-boot files)
+
 dependencies:
   - aeson
   - base
   - bytestring
+  - classy-prelude
   - containers
-  - hsyslog
+  - monad-control
+  - monad-logger
   - stm
   - text
-  - time
+  - unliftio
 
 library:
   source-dirs: src
@@ -41,10 +48,11 @@ library:
     - http-client
     - io-streams
     - lens
-    - mtl
     - network
     - openssl-streams
-    - transformers
+    - safe-exceptions
+    - time
+    - transformers-base
     - xml-conduit
     - xml-hamlet
 
@@ -58,5 +66,8 @@ executables:
       - random
       - unix
       - websockets
+      - stm
     other-modules:
       - Paths_dmcc
+    ghc-options:
+      - -threaded

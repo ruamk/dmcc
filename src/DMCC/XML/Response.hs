@@ -3,18 +3,17 @@
 {-| Incoming XML messages (responses and events). -}
 
 module DMCC.XML.Response
-    ( Response(..)
-    , Event(..)
+    ( Response (..)
+    , Event (..)
     , fromXml
     )
 
 where
 
-import           Control.Exception (SomeException)
-import           Data.ByteString.Lazy (ByteString)
+import           DMCC.Prelude
+
 import           Data.CaseInsensitive (mk)
-import           Data.List
-import           Data.Text (Text)
+import           Data.List (foldl1')
 import qualified Data.Text as T
 import qualified Data.Text.Read as T
 
@@ -28,8 +27,8 @@ import           DMCC.Types
 
 -- | DMCC response to a request.
 data Response
-  = UnknownResponse ByteString
-  | MalformedResponse ByteString SomeException
+  = UnknownResponse LByteString
+  | MalformedResponse LByteString SomeException
   | StartApplicationSessionPosResponse
     { sessionID :: Text
     , actualProtocolVersion :: Text
@@ -120,7 +119,7 @@ $(deriveJSON
   defaultOptions{sumEncoding = defaultTaggedObject{tagFieldName="event"}}
   ''Event)
 
-fromXml :: ByteString -> Response
+fromXml :: LByteString -> Response
 fromXml xml
   = case parseLBS def xml of
     Left err -> MalformedResponse xml err
@@ -295,24 +294,25 @@ fromXml xml
         _ -> UnknownResponse xml
 
 
+text :: Cursor -> Text -> Text
 text c n = textFromPath c n []
 
 
-decimal c n = let txt = text c n
-  in case T.decimal txt of
-    Right (x,"") -> x
-    _ -> error $ "Can't parse as decimal: " ++ show txt
+decimal :: Cursor -> Text -> Int
+decimal c n =
+  case T.decimal txt of
+    Right (x, "") -> x
+    _ -> error $ "Can't parse as decimal: " <> show txt
+  where
+    txt = text c n :: Text
 
 
 -- | Extract contents of the first element which matches provided
 -- path (@rootName:extraNames@). Return empty text if no element
 -- matches the path.
+textFromPath :: Cursor -> Text -> [Text] -> Text
 textFromPath cur rootName extraNames =
-  if null contents
-  then ""
-  else head contents
+  fromMaybe "" $ headMay contents
   where
     contents =
-      cur $//
-      (foldl1' (&/) (Data.List.map laxElement (rootName:extraNames))
-       &/ content)
+      cur $// foldl1' (&/) (map laxElement $ rootName : extraNames) &/ content
