@@ -7,21 +7,19 @@ monitoring.
 
 module DMCC
   ( Session
-  , ConnectionType(..)
   , startSession
   , stopSession
-  , defaultLoggingOptions
   , defaultSessionOptions
 
   , AgentHandle
   , controlAgent
   , releaseAgent
 
-  , Action(..)
+  , Action (..)
   , agentAction
 
-  , AgentEvent(..)
-  , AgentSnapshot(..)
+  , AgentEvent (..)
+  , AgentSnapshot (..)
   , handleEvents
   , getAgentSnapshot
 

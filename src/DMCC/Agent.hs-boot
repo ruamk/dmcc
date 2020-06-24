@@ -1,9 +1,10 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module DMCC.Agent
 
 where
 
-import           Control.Concurrent.STM (TChan)
-import           Data.Text (Text)
+import           DMCC.Prelude
 
 import           DMCC.Types
 import qualified DMCC.XML.Response as Rs
@@ -22,4 +23,5 @@ monitorId :: Agent -> Text
 rspChan :: Agent -> TChan Rs.Response
 
 
-releaseAgent :: AgentHandle -> IO ()
+releaseAgent :: (MonadUnliftIO m, MonadLoggerIO m, MonadBaseControl IO m, MonadCatch m)
+             => AgentHandle -> m ()

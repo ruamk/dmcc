@@ -1,6 +1,6 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 {-| Shared type declarations. -}
@@ -9,12 +9,16 @@ module DMCC.Types
 
 where
 
+import DMCC.Prelude
+
+#if MIN_VERSION_base(4,13,0)
+import Control.Monad.Fail
+#endif
 import Data.Aeson as A
 import Data.Aeson.TH
 import Data.CaseInsensitive
 import Data.Data
 import Data.Text as T
-import Data.Time.Clock
 
 
 -- | Device ID used in DMCC requests.
@@ -26,7 +30,7 @@ newtype DeviceId =
 
 
 instance FromJSON DeviceId where
-  parseJSON v = (DeviceId . mk) <$> parseJSON v
+  parseJSON v = DeviceId . mk <$> parseJSON v
 
 
 instance ToJSON DeviceId where
@@ -51,12 +55,12 @@ newtype Extension =
 
 
 instance FromJSON Extension where
-  parseJSON (A.String s)
-    | T.length s > 30 = fail "Maximum extension length is 30 digits"
-    | (\c -> c `elem` (['0'..'9'] ++ ['*', '#'])) `T.all` s =
-      return $ Extension s
-    | otherwise = fail "Extension must contain the digits 0-9, * or #"
-  parseJSON _ = fail "Could not parse extension"
+  parseJSON = withText "Extension" parseExtension
+    where
+      parseExtension s
+        | T.length s > 30 = fail "Maximum extension length is 30 digits"
+        | (\c -> c `elem` (['0'..'9'] <> ['*', '#'])) `T.all` s = pure $ Extension s
+        | otherwise = fail "Extension must contain the digits 0-9, * or #"
 
 
 newtype SwitchName =
@@ -117,7 +121,7 @@ instance ToJSON AgentState where
 
 
 instance FromJSON AgentState where
-  parseJSON (String "Busy") = return Busy
+  parseJSON (String "Busy") = pure Busy
   parseJSON s@(String _)    = Settable <$> parseJSON s
   parseJSON _               = fail "Could not parse AgentState"
 
@@ -130,8 +134,9 @@ data ParticipationType = Active
 $(deriveJSON defaultOptions ''ParticipationType)
 
 
-data LoggingOptions = LoggingOptions
-  { syslogIdent :: String
+-- TODO This should be removed
+newtype LoggingOptions = LoggingOptions
+  { syslogIdent :: ByteString
   }
 
 
