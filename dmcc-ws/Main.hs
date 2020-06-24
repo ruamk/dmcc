@@ -164,7 +164,6 @@ avayaApplication Config{..} as refs pending =
 
       conn <- liftIO $ acceptRequest pending
       CS.logError $ "New websocket opened for " <> label
-      liftIO $ forkPingThread conn 30
       -- Create a new agent reference, possibly establishing control over the agent
       r <- atomically $ takeTMVar refs
 
@@ -213,7 +212,7 @@ avayaApplication Config{..} as refs pending =
         liftIO $ sendTextData conn $ encode s
 
         -- Agent actions loop
-        forever $ do
+        withPingThread' conn 30 (return ()) $ forever $ do
           msg <- liftIO $ receiveData conn
 
           case eitherDecode msg of
@@ -235,3 +234,8 @@ avayaApplication Config{..} as refs pending =
 
     refReport ext cnt = CS.logDebug $
       fromString (show ext) <> " has " <> fromString (show cnt) <> " references"
+
+
+
+withPingThread' :: MonadUnliftIO m => Connection -> Int -> m () -> m a -> m a
+withPingThread' c n action app = withRunInIO $ \run -> withPingThread c n (run action) (run app)
