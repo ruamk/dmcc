@@ -13,6 +13,7 @@ DMCC session handling.
 
 module DMCC.Session
   ( Session (..)
+  , ConnectionType (..)
   , startSession
   , stopSession
   , defaultSessionOptions
@@ -39,12 +40,16 @@ import           Data.Typeable ()
 import           System.IO.Streams ( InputStream
                                    , OutputStream
                                    , ReadTooShortException
+                                   , handleToInputStream
+                                   , handleToOutputStream
                                    , write
                                    )
 import qualified System.IO.Streams.SSL as SSLStreams
+import           System.IO.Streams.Network (socketToStreams)
 
 import qualified Network.HTTP.Client as HTTP
 import           Network.Socket hiding (connect)
+import qualified Network.Socket as NS
 import           OpenSSL
 import qualified OpenSSL.Session as SSL
 
@@ -57,6 +62,9 @@ import qualified DMCC.XML.Raw as Raw
 
 import {-# SOURCE #-} DMCC.Agent
 
+
+data ConnectionType = Plain
+                    | TLS { caDir :: Maybe FilePath }
 
 -- | Third element is a connection close action.
 type ConnectionData = (InputStream ByteString, OutputStream ByteString, IO ())
@@ -124,8 +132,8 @@ defaultSessionOptions = SessionOptions 1 120 24 5
 startSession :: (MonadUnliftIO m, MonadLoggerIO m, MonadBaseControl IO m, MonadCatch m)
              => (String, PortNumber)
              -- ^ Host and port of AES server.
-             -> Maybe FilePath
-             -- ^ AES CA certificates directory for TLS.
+             -> ConnectionType
+             -- ^ Use TLS
              -> Text
              -- ^ DMCC API user.
              -> Text
@@ -134,7 +142,7 @@ startSession :: (MonadUnliftIO m, MonadLoggerIO m, MonadBaseControl IO m, MonadC
              -- ^ Web hook URL.
              -> SessionOptions
              -> m Session
-startSession (host, port) caDir user pass whUrl sopts = do
+startSession (host, port) ct user pass whUrl sopts = do
   syncResponses <- newTVarIO IntMap.empty
   agentRequests <- newTVarIO IntMap.empty
   invoke <- newTVarIO 0
@@ -160,11 +168,31 @@ startSession (host, port) caDir user pass whUrl sopts = do
              else throwIO e
         connect1 attempts =
           handleNetwork (connectExHandler attempts) $
-          liftIO $ withOpenSSL $ do
+          liftIO $ case ct of
+            Plain -> do
+              (addr:_) <- resolve
+              (is, os, cl) <- open addr
+              return (is, os, cl)
+
+              where resolve :: IO [AddrInfo]
+                    resolve = do
+                      let hints = defaultHints{ addrSocketType  = Stream }
+                      getAddrInfo (Just hints) (Just host) (Just $ show port)
+
+                    open :: AddrInfo -> IO ( InputStream ByteString
+                                         , OutputStream ByteString
+                                         , IO ()
+                                         )
+                    open addr = do
+                      sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
+                      NS.connect sock $ addrAddress addr
+                      (is, os) <- socketToStreams sock
+                      pure (is, os, return ())
+
+            TLS caDir -> withOpenSSL $ do
               sslCtx <- SSL.context
               SSL.contextSetDefaultCiphers sslCtx
-              SSL.contextSetVerificationMode sslCtx $
-                SSL.VerifyNone
+              SSL.contextSetVerificationMode sslCtx SSL.VerifyNone
               maybe (pure ()) (SSL.contextSetCADirectory sslCtx) caDir
               (is, os, ssl) <- SSLStreams.connect sslCtx host port
               let cl = do
