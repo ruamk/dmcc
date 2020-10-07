@@ -40,8 +40,6 @@ import           Data.Typeable ()
 import           System.IO.Streams ( InputStream
                                    , OutputStream
                                    , ReadTooShortException
-                                   , handleToInputStream
-                                   , handleToOutputStream
                                    , write
                                    )
 import qualified System.IO.Streams.SSL as SSLStreams
