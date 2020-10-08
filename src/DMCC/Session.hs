@@ -42,8 +42,8 @@ import           System.IO.Streams ( InputStream
                                    , ReadTooShortException
                                    , write
                                    )
+import           System.IO.Streams.Handle (handleToStreams)
 import qualified System.IO.Streams.SSL as SSLStreams
-import           System.IO.Streams.Network (socketToStreams)
 
 import qualified Network.HTTP.Client as HTTP
 import           Network.Socket hiding (connect)
@@ -184,8 +184,11 @@ startSession (host, port) ct user pass whUrl sopts = do
                     open addr = do
                       sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
                       NS.connect sock $ addrAddress addr
-                      (is, os) <- socketToStreams sock
-                      pure (is, os, return ())
+                      h <- socketToHandle sock ReadWriteMode
+                      hSetBuffering h NoBuffering
+                      (is, os) <- handleToStreams h
+                      let cl = hClose h
+                      pure (is, os, cl)
 
             TLS caDir -> withOpenSSL $ do
               sslCtx <- SSL.context
